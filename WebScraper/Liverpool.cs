@@ -5,6 +5,8 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace WebScraper
 {
@@ -20,16 +22,18 @@ namespace WebScraper
             htmlWeb.OverrideEncoding = Encoding.UTF8;
             htmlWeb.UserAgent = "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
             htmlDocument = htmlWeb.Load(url);
-            var tituloElemento = htmlDocument.DocumentNode.SelectSingleNode(@"//script[@id=""__NEXT_DATA__""]/text()");
+            var jsonNode = htmlDocument.DocumentNode.SelectSingleNode(@"//script[@id=""__NEXT_DATA__""]/text()");
+            
+            // Parse the JSON string to get the 'records' section
+            JObject jsonObject = JObject.Parse(jsonNode.OuterHtml);
+            JToken recordsToken = jsonObject["query"]!["data"]!["mainContent"]!["records"]!;
 
-            string outerHtml = htmlDocument.DocumentNode.OuterHtml;
 
-            HttpClient httpClient = new HttpClient();
-            string htmlString = httpClient.GetStringAsync(url).Result;
-            htmlDocument.LoadHtml(htmlString);
 
-            tituloElemento = htmlDocument.DocumentNode.SelectSingleNode(@"//h5[@class='card-title a-card-description']/span[@class='m-description-spcbrand']/parent::h5");
-            var titulo = tituloElemento.InnerText.Trim();
+            // Deserialize the 'records' section into a list of Record objects
+            List<Record>? records = JsonConvert.DeserializeObject<List<Record>>(recordsToken.ToString());
+
+       
 
         }
          
